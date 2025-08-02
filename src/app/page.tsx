@@ -7,6 +7,8 @@ import PortfolioOverview from '@/components/portfolio/PortfolioOverview'
 import SwapInterface from '@/components/swap/SwapInterface'
 import ChainSwitcher from '@/components/ui/ChainSwitcher'
 import PriceChart from '@/components/portfolio/PriceChart'
+import DataSourceStatus from '@/components/ui/DataSourceStatus'
+import OneInchStatus from '@/components/ui/OneInchStatus'
 
 export default function Home() {
   const { address, isConnected } = useAccount()
@@ -17,27 +19,30 @@ export default function Home() {
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-gray-900">Portfolio Dashboard</h2>
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900">Portfolio Dashboard</h2>
+          <div className="flex items-center gap-4 mt-2">
+            <p className="text-gray-600">
+              {isConnected ? `Managing ${address?.slice(0, 6)}...${address?.slice(-4)}` : 'Connect your wallet to get started'}
+            </p>
+            <DataSourceStatus />
+          </div>
+        </div>
         
         <div className="flex items-center gap-4">
           {isConnected && <ChainSwitcher />}
           
           {isConnected ? (
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">
-                {address?.slice(0, 6)}...{address?.slice(-4)}
-              </span>
-              <button
-                onClick={() => disconnect()}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
-              >
-                Disconnect
-              </button>
-            </div>
+            <button
+              onClick={() => disconnect()}
+              className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Disconnect
+            </button>
           ) : (
             <button
               onClick={() => connect({ connector: injected() })}
-              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
             >
               Connect Wallet
             </button>
@@ -51,28 +56,53 @@ export default function Home() {
           <p className="text-3xl font-bold text-green-600">
             ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </p>
+          <p className="text-sm text-gray-600 mt-1">Auto-updating every 30s</p>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-semibold mb-2">24h Change</h3>
-          <p className="text-3xl font-bold text-green-600">+6.0%</p>
+          <p className="text-3xl font-bold text-green-600">+6.2%</p>
+          <p className="text-sm text-gray-600 mt-1">+${(totalValue * 0.062).toFixed(2)}</p>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-lg font-semibold mb-2">Active Protocols</h3>
-          <p className="text-3xl font-bold text-blue-600">3</p>
+          <h3 className="text-lg font-semibold mb-2">Builder</h3>
+          <p className="text-3xl font-bold text-blue-600">anumukul456</p>
+          <p className="text-sm text-gray-600 mt-1">August 2, 2025</p>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        <div className="xl:col-span-2 space-y-8">
-          <PortfolioOverview />
-          <PriceChart />
+      {isConnected ? (
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          <div className="xl:col-span-3 space-y-8">
+            <PortfolioOverview />
+            <PriceChart />
+          </div>
+          <div className="space-y-6">
+            <OneInchStatus />
+            <SwapInterface />
+          </div>
         </div>
-        <div>
-          <SwapInterface />
+      ) : (
+        <div className="text-center py-16">
+          <div className="text-6xl mb-6">🚀</div>
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            DeFi Portfolio Manager
+          </h3>
+          <p className="text-gray-600 mb-8 max-w-md mx-auto">
+            Track your DeFi portfolio with real-time data. Currently running in demo mode while 1inch verification is pending.
+          </p>
+          <button
+            onClick={() => connect({ connector: injected() })}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-medium transition-colors shadow-lg"
+          >
+            Connect Wallet & View Demo
+          </button>
+          <div className="mt-6 text-sm text-gray-500">
+            Built by anumukul456 • Demo mode with realistic data
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

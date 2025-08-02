@@ -4,6 +4,7 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { injected } from 'wagmi/connectors'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import PortfolioOverview from '@/components/portfolio/PortfolioOverview'
+import SwapInterface from '@/components/swap/SwapInterface'
 
 export default function Home() {
   const { address, isConnected } = useAccount()
@@ -57,7 +58,10 @@ export default function Home() {
         </div>
       </div>
       
-      <PortfolioOverview />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <PortfolioOverview />
+        <SwapInterface />
+      </div>
     </div>
   )
 }

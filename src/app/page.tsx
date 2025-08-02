@@ -2,11 +2,14 @@
 
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { injected } from 'wagmi/connectors'
+import { usePortfolio } from '@/hooks/usePortfolio'
+import PortfolioOverview from '@/components/portfolio/PortfolioOverview'
 
 export default function Home() {
   const { address, isConnected } = useAccount()
   const { connect } = useConnect()
   const { disconnect } = useDisconnect()
+  const { totalValue } = usePortfolio()
 
   return (
     <div className="space-y-8">
@@ -38,7 +41,9 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-semibold mb-2">Total Portfolio Value</h3>
-          <p className="text-3xl font-bold text-green-600">$0.00</p>
+          <p className="text-3xl font-bold text-green-600">
+            ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+          </p>
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-sm border">
@@ -47,23 +52,12 @@ export default function Home() {
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow-sm border">
-          <h3 className="text-lg font-semibold mb-2">Total Assets</h3>
-          <p className="text-3xl font-bold text-blue-600">0</p>
+          <h3 className="text-lg font-semibold mb-2">Active Chains</h3>
+          <p className="text-3xl font-bold text-blue-600">1</p>
         </div>
       </div>
       
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <h3 className="text-lg font-semibold mb-4">Portfolio Overview</h3>
-        {isConnected ? (
-          <p className="text-gray-600">
-            Wallet connected: {address}
-            <br />
-            <span className="text-sm text-green-600">Ready to load portfolio data!</span>
-          </p>
-        ) : (
-          <p className="text-gray-500">Connect your wallet to view your portfolio</p>
-        )}
-      </div>
+      <PortfolioOverview />
     </div>
   )
 }

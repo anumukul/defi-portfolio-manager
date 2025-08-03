@@ -28,6 +28,8 @@ export async function GET(request: NextRequest) {
       allowPartialFill: 'false'
     });
 
+    console.log('🔄 1inch quote request:', Object.fromEntries(queryParams));
+
     const response = await fetch(`https://api.1inch.dev/swap/v6.0/1/quote?${queryParams}`, {
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
@@ -37,6 +39,7 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('❌ 1inch quote error:', response.status, errorText);
       return NextResponse.json(
         { error: `1inch quote API error: ${response.status}` }, 
         { status: response.status }
@@ -44,6 +47,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
+    console.log('✅ 1inch quote success');
     return NextResponse.json(data);
     
   } catch (error) {

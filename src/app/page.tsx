@@ -4,7 +4,8 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { injected } from 'wagmi/connectors'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import PortfolioOverview from '@/components/portfolio/PortfolioOverview'
-import RealSwapInterface from '@/components/swap/RealSwapInterface' // ✅ Changed this line
+import RealSwapInterface from '@/components/swap/RealSwapInterface'
+import LivePriceTracker from '@/components/portfolio/LivePriceTracker' 
 import ChainSwitcher from '@/components/ui/ChainSwitcher'
 import PriceChart from '@/components/portfolio/PriceChart'
 import DataSourceStatus from '@/components/ui/DataSourceStatus'
@@ -68,7 +69,7 @@ export default function Home() {
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-semibold mb-2">Builder</h3>
           <p className="text-3xl font-bold text-blue-600">anumukul456</p>
-          <p className="text-sm text-gray-600 mt-1">August 2, 2025</p>
+          <p className="text-sm text-gray-600 mt-1">August 3, 2025</p>
         </div>
       </div>
       
@@ -76,11 +77,12 @@ export default function Home() {
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
           <div className="xl:col-span-3 space-y-8">
             <PortfolioOverview />
+            <LivePriceTracker /> {/* ✅ Add this */}
             <PriceChart />
           </div>
           <div className="space-y-6">
             <OneInchStatus />
-            <RealSwapInterface /> {/* ✅ Changed this line */}
+            <RealSwapInterface />
           </div>
         </div>
       ) : (
@@ -90,7 +92,7 @@ export default function Home() {
             DeFi Portfolio Manager with Real 1inch Integration
           </h3>
           <p className="text-gray-600 mb-8 max-w-md mx-auto">
-            Track your DeFi portfolio and swap tokens using real 1inch API integration.
+            Track your DeFi portfolio and execute real swaps using 1inch API integration.
           </p>
           <button
             onClick={() => connect({ connector: injected() })}

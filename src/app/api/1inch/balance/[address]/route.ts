@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { address: string } }
+  { params }: { params: Promise<{ address: string }> }
 ) {
   const API_KEY = process.env.NEXT_PUBLIC_1INCH_API_KEY;
-  const { address } = params;
+  const { address } = await params; // ✅ AWAIT params
   
   if (!API_KEY) {
     return NextResponse.json({ error: 'API key not configured' }, { status: 500 });

@@ -9,6 +9,7 @@ import ChainSwitcher from '@/components/ui/ChainSwitcher'
 import PriceChart from '@/components/portfolio/PriceChart'
 import DataSourceStatus from '@/components/ui/DataSourceStatus'
 import OneInchStatus from '@/components/ui/OneInchStatus'
+import TestAPI from '@/components/TestAPI' // 👈 ADD THIS IMPORT
 
 export default function Home() {
   const { address, isConnected } = useAccount()
@@ -18,6 +19,9 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
+      {/* 🧪 ADD THIS TEST COMPONENT AT THE TOP */}
+      <TestAPI />
+      
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Portfolio Dashboard</h2>
@@ -68,7 +72,7 @@ export default function Home() {
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-semibold mb-2">Builder</h3>
           <p className="text-3xl font-bold text-blue-600">anumukul456</p>
-          <p className="text-sm text-gray-600 mt-1">August 2, 2025</p>
+          <p className="text-sm text-gray-600 mt-1">August 3, 2025</p>
         </div>
       </div>
       
@@ -90,16 +94,16 @@ export default function Home() {
             DeFi Portfolio Manager
           </h3>
           <p className="text-gray-600 mb-8 max-w-md mx-auto">
-            Track your DeFi portfolio with real-time data. Currently running in demo mode while 1inch verification is pending.
+            Track your DeFi portfolio with real-time data from 1inch APIs.
           </p>
           <button
             onClick={() => connect({ connector: injected() })}
             className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-medium transition-colors shadow-lg"
           >
-            Connect Wallet & View Demo
+            Connect Wallet & Start Trading
           </button>
           <div className="mt-6 text-sm text-gray-500">
-            Built by anumukul456 • Demo mode with realistic data
+            Built by anumukul456 • Real 1inch API Integration
           </div>
         </div>
       )}

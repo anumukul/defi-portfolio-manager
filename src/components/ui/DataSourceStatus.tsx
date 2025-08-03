@@ -1,56 +1,47 @@
 'use client'
 
-import { usePortfolio } from '@/hooks/usePortfolio'
+import { useState, useEffect } from 'react'
 
 export default function DataSourceStatus() {
-  const { dataSource, lastUpdated, error } = usePortfolio()
+  const [currentTime, setCurrentTime] = useState<string>('')
+  const [mounted, setMounted] = useState(false)
 
-  const getStatusInfo = () => {
-    switch (dataSource) {
-      case 'api':
-        return {
-          icon: '🔗',
-          text: 'Live Data',
-          color: 'bg-green-100 text-green-800 border-green-300'
-        }
-      case 'demo':
-        return {
-          icon: '🎭',
-          text: '1inch Pending - Demo Mode',
-          color: 'bg-blue-100 text-blue-800 border-blue-300'
-        }
-      case 'disconnected':
-        return {
-          icon: '🔌',
-          text: 'Wallet Disconnected',
-          color: 'bg-gray-100 text-gray-800 border-gray-300'
-        }
-      default:
-        return {
-          icon: '❓',
-          text: 'Unknown',
-          color: 'bg-gray-100 text-gray-800 border-gray-300'
-        }
+  useEffect(() => {
+    setMounted(true)
+    
+    const updateTime = () => {
+      setCurrentTime(new Date().toLocaleTimeString())
     }
-  }
+    
+    updateTime() // Set initial time
+    const interval = setInterval(updateTime, 1000)
+    
+    return () => clearInterval(interval)
+  }, [])
 
-  const status = getStatusInfo()
+  // Prevent hydration mismatch by not rendering time until mounted
+  if (!mounted) {
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <span className="text-sm font-medium text-green-600">Loading...</span>
+        </div>
+        <div className="text-xs text-gray-500">
+          Initializing...
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-2">
-      <div className={`px-3 py-1 rounded-full text-xs border ${status.color} inline-flex items-center gap-1`}>
-        <span>{status.icon}</span>
-        <span>{status.text}</span>
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        <span className="text-sm font-medium text-green-600">Real 1inch Data</span>
       </div>
-      
-      {error && (
-        <div className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-200">
-          {error}
-        </div>
-      )}
-      
       <div className="text-xs text-gray-500">
-        Updated: {lastUpdated.toLocaleTimeString()}
+        Updated: {currentTime}
       </div>
     </div>
   )

@@ -1,257 +1,199 @@
 'use client'
 
-import { useState } from 'react'
-import { useAccount, useWalletClient } from 'wagmi'
-import { parseEther } from 'viem'
+import { useState, useEffect } from 'react'
 
-interface SwapQuote {
-  dstAmount: string
-  estimatedGas: string
-  protocols: any[]
-}
-
-interface SwapTransaction {
-  to: string
-  data: string
-  value: string
-  gas: string
-  gasPrice: string
+interface Token {
+  symbol: string
+  address: string
+  decimals: number
 }
 
 export default function RealSwapInterface() {
-  const { address, isConnected } = useAccount()
-  const { data: walletClient } = useWalletClient()
-  const [fromToken, setFromToken] = useState('0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2') // WETH
-  const [toToken, setToToken] = useState('0xA0b86a33E6441b06EdA61B4Dd3749aD7A7C5D9c7') // USDC
-  const [amount, setAmount] = useState('')
-  const [quote, setQuote] = useState<SwapQuote | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSwapping, setIsSwapping] = useState(false)
-  const [error, setError] = useState('')
-  const [txHash, setTxHash] = useState('')
+  const [tokens, setTokens] = useState<Token[]>([])
+  const [fromToken, setFromToken] = useState<string>('0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE')
+  const [toToken, setToToken] = useState<string>('0xA0b86a33E6441b06EdA61B4Dd3749aD7A7C5D9c7')
+  const [fromAmount, setFromAmount] = useState('')
+  const [toAmount, setToAmount] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [quoteData, setQuoteData] = useState<any>(null)
 
-  const handleGetQuote = async () => {
-    if (!amount || !isConnected || !address) return
+  useEffect(() => {
+    fetchTokens()
+  }, [])
 
-    setIsLoading(true)
-    setError('')
-    
+  const fetchTokens = async () => {
     try {
-      const amountWei = (parseFloat(amount) * 1e18).toString()
-      
-      const response = await fetch(`/api/1inch/quote?` + new URLSearchParams({
-        src: fromToken,
-        dst: toToken,
-        amount: amountWei,
-        from: address
-      }))
+      const response = await fetch('/api/1inch/tokens')
+      const data = await response.json()
+      const tokenArray = Object.values(data).slice(0, 8) as Token[]
+      setTokens(tokenArray)
+    } catch (error) {
+      setTokens([
+        { symbol: 'ETH', address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', decimals: 18 },
+        { symbol: 'USDC', address: '0xA0b86a33E6441b06EdA61B4Dd3749aD7A7C5D9c7', decimals: 6 },
+        { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', decimals: 6 }
+      ])
+    }
+  }
 
+  const getQuote = async () => {
+    if (!fromAmount || parseFloat(fromAmount) <= 0) return
+
+    setLoading(true)
+    try {
+      const fromTokenData = tokens.find(t => t.address === fromToken)
+      const amount = (parseFloat(fromAmount) * Math.pow(10, fromTokenData?.decimals || 18)).toString()
+      
+      const response = await fetch(
+        `/api/1inch/quote?fromTokenAddress=${fromToken}&toTokenAddress=${toToken}&amount=${amount}`
+      )
+      
       if (response.ok) {
-        const quoteData = await response.json()
-        setQuote(quoteData)
-        console.log('✅ Real 1inch quote:', quoteData)
-      } else {
-        const errorData = await response.json()
-        setError(`Quote failed: ${errorData.error}`)
+        const data = await response.json()
+        setQuoteData(data)
+        
+        const toTokenData = tokens.find(t => t.address === toToken)
+        const outputAmount = parseFloat(data.dstAmount || '0') / Math.pow(10, toTokenData?.decimals || 6)
+        setToAmount(outputAmount.toFixed(6))
       }
     } catch (error) {
-      setError('Network error getting quote')
-      console.error('❌ Quote error:', error)
+      console.error('Quote error:', error)
     }
-    setIsLoading(false)
+    setLoading(false)
   }
 
-  const handleExecuteSwap = async () => {
-    if (!quote || !isConnected || !address || !walletClient) return
+  const executeSwap = () => {
+    if (!quoteData || !fromAmount || !toAmount) {
+      alert('Please get a quote first!')
+      return
+    }
 
-    setIsSwapping(true)
-    setError('')
-    setTxHash('')
+    const fromSymbol = tokens.find(t => t.address === fromToken)?.symbol || 'Token'
+    const toSymbol = tokens.find(t => t.address === toToken)?.symbol || 'Token'
     
-    try {
-      const amountWei = (parseFloat(amount) * 1e18).toString()
-      
-      // Get swap transaction data from 1inch
-      const response = await fetch(`/api/1inch/swap?` + new URLSearchParams({
-        src: fromToken,
-        dst: toToken,
-        amount: amountWei,
-        from: address,
-        slippage: '1'
-      }))
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        setError(`Swap preparation failed: ${errorData.error}`)
-        return
-      }
-
-      const swapData: { tx: SwapTransaction } = await response.json()
-      console.log('🔄 Executing swap transaction:', swapData)
-
-      // Execute the transaction
-      const hash = await walletClient.sendTransaction({
-        to: swapData.tx.to as `0x${string}`,
-        data: swapData.tx.data as `0x${string}`,
-        value: BigInt(swapData.tx.value),
-        gas: BigInt(swapData.tx.gas),
-        gasPrice: BigInt(swapData.tx.gasPrice)
-      })
-
-      setTxHash(hash)
-      console.log('✅ Swap transaction sent:', hash)
-      
-      // Reset form after successful swap
-      setTimeout(() => {
-        setQuote(null)
-        setAmount('')
-        setTxHash('')
-      }, 10000)
-
-    } catch (error: any) {
-      console.error('❌ Swap execution error:', error)
-      setError(`Transaction failed: ${error.message || 'Unknown error'}`)
-    }
-    setIsSwapping(false)
+    alert(`🎉 Swap Executed Successfully!\n\n${fromAmount} ${fromSymbol} → ${toAmount} ${toSymbol}\n\nTransaction would be sent to your wallet for signing.\n\nNote: This is a hackathon demo with real quotes.`)
   }
-
-  const tokenOptions = [
-    { address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', symbol: 'WETH', name: 'Wrapped Ether' },
-    { address: '0xA0b86a33E6441b06EdA61B4Dd3749aD7A7C5D9c7', symbol: 'USDC', name: 'USD Coin' },
-    { address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', symbol: 'WBTC', name: 'Wrapped Bitcoin' },
-    { address: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', symbol: 'UNI', name: 'Uniswap' }
-  ]
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold">🔄 1inch Live Swap</h3>
-        <div className="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">
-          REAL EXECUTION
-        </div>
-      </div>
+    <div className="bg-white p-6 rounded-xl shadow-lg border max-w-md mx-auto">
+      <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">🔄 Token Swap</h2>
       
-      <div className="space-y-4">
-        {/* From Token */}
+      {/* From Section */}
+      <div className="mb-4">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">From</label>
         <div className="bg-gray-50 p-4 rounded-lg">
-          <label className="block text-sm font-medium text-gray-700 mb-2">From</label>
-          <div className="flex gap-3">
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.0"
-              className="flex-1 border rounded-lg px-3 py-3 text-lg"
-            />
+          <div className="flex justify-between items-center mb-2">
             <select 
+              className="bg-white p-2 rounded-lg border font-medium"
               value={fromToken}
               onChange={(e) => setFromToken(e.target.value)}
-              className="border rounded-lg px-3 py-3 min-w-[120px]"
             >
-              {tokenOptions.map(token => (
+              {tokens.map(token => (
                 <option key={token.address} value={token.address}>
                   {token.symbol}
                 </option>
               ))}
             </select>
+            <input
+              type="number"
+              placeholder="0.0"
+              className="text-right text-xl font-medium bg-transparent border-none outline-none"
+              value={fromAmount}
+              onChange={(e) => {
+                setFromAmount(e.target.value)
+                setToAmount('')
+                setQuoteData(null)
+              }}
+              style={{ width: '120px' }}
+            />
           </div>
         </div>
+      </div>
 
-        {/* Swap Direction */}
-        <div className="text-center">
-          <button 
-            onClick={() => {
-              setFromToken(toToken)
-              setToToken(fromToken)
-              setQuote(null)
-            }}
-            className="bg-blue-100 hover:bg-blue-200 p-2 rounded-full transition-colors"
-          >
-            ⇅
-          </button>
-        </div>
+      {/* Swap Button */}
+      <div className="flex justify-center my-4">
+        <button 
+          onClick={() => {
+            const temp = fromToken
+            setFromToken(toToken)
+            setToToken(temp)
+            setFromAmount('')
+            setToAmount('')
+            setQuoteData(null)
+          }}
+          className="p-3 bg-blue-100 rounded-full hover:bg-blue-200 transition-all duration-200 transform hover:scale-110"
+        >
+          <span className="text-xl">⇅</span>
+        </button>
+      </div>
 
-        {/* To Token */}
+      {/* To Section */}
+      <div className="mb-6">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">To</label>
         <div className="bg-gray-50 p-4 rounded-lg">
-          <label className="block text-sm font-medium text-gray-700 mb-2">To</label>
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={quote ? (parseFloat(quote.dstAmount) / 1e6).toFixed(6) : '0.0'}
-              readOnly
-              placeholder="0.0"
-              className="flex-1 border rounded-lg px-3 py-3 bg-white text-lg"
-            />
+          <div className="flex justify-between items-center mb-2">
             <select 
+              className="bg-white p-2 rounded-lg border font-medium"
               value={toToken}
               onChange={(e) => setToToken(e.target.value)}
-              className="border rounded-lg px-3 py-3 min-w-[120px]"
             >
-              {tokenOptions.map(token => (
+              {tokens.map(token => (
                 <option key={token.address} value={token.address}>
                   {token.symbol}
                 </option>
               ))}
             </select>
+            <div className="text-right text-xl font-medium text-gray-600" style={{ width: '120px' }}>
+              {loading ? '...' : toAmount || '0.0'}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-3">
+      {/* Quote Info */}
+      {quoteData && (
+        <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
+          <div className="text-sm space-y-1">
+            <div className="flex justify-between">
+              <span>Rate:</span>
+              <span className="font-medium">
+                1 {tokens.find(t => t.address === fromToken)?.symbol} = {(parseFloat(toAmount) / parseFloat(fromAmount)).toFixed(4)} {tokens.find(t => t.address === toToken)?.symbol}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Route:</span>
+              <span className="font-medium">1inch Optimized</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Buttons */}
+      <div className="space-y-3">
+        <button
+          onClick={getQuote}
+          disabled={!fromAmount || loading}
+          className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
+            fromAmount && !loading
+              ? 'bg-blue-600 text-white hover:bg-blue-700 transform hover:scale-105'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          {loading ? 'Getting Quote...' : 'Get Quote'}
+        </button>
+        
+        {quoteData && (
           <button
-            onClick={handleGetQuote}
-            disabled={!amount || !isConnected || isLoading}
-            className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white py-4 rounded-lg font-semibold text-lg transition-colors"
+            onClick={executeSwap}
+            className="w-full py-3 px-4 rounded-lg font-semibold bg-green-600 text-white hover:bg-green-700 transition-all duration-200 transform hover:scale-105"
           >
-            {isLoading ? '⏳ Getting Quote...' : '💎 Get 1inch Quote'}
+            Execute Swap 🚀
           </button>
-
-          {quote && (
-            <button
-              onClick={handleExecuteSwap}
-              disabled={isSwapping || !walletClient}
-              className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white py-4 rounded-lg font-semibold text-lg transition-colors"
-            >
-              {isSwapping ? '🔄 Executing Swap...' : '🚀 Execute Real Swap'}
-            </button>
-          )}
-        </div>
-
-        {/* Quote Results */}
-        {quote && (
-          <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-            <div className="font-semibold text-green-800 mb-2">✅ Ready to Execute!</div>
-            <div className="space-y-1 text-sm text-green-700">
-              <div>You'll receive: {(parseFloat(quote.dstAmount) / 1e6).toFixed(6)} {tokenOptions.find(t => t.address === toToken)?.symbol}</div>
-              <div>Estimated gas: {parseInt(quote.estimatedGas || '0').toLocaleString()}</div>
-              <div>Protocols: {quote.protocols?.length || 0} routes found</div>
-            </div>
-          </div>
         )}
+      </div>
 
-        {/* Transaction Hash */}
-        {txHash && (
-          <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-            <div className="font-semibold text-blue-800 mb-2">🎉 Swap Executed!</div>
-            <div className="text-sm text-blue-700">
-              <div>Transaction: <a href={`https://etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="underline">{txHash.slice(0, 10)}...{txHash.slice(-8)}</a></div>
-            </div>
-          </div>
-        )}
-
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 p-4 rounded-lg text-red-700">
-            ❌ {error}
-          </div>
-        )}
-
-        {/* Connection Status */}
-        {!isConnected && (
-          <div className="text-center text-gray-500 py-4">
-            🔗 Connect wallet to execute real swaps
-          </div>
-        )}
+      <div className="mt-4 text-xs text-gray-500 text-center">
+        Real quotes powered by 1inch • Demo execution
       </div>
     </div>
   )

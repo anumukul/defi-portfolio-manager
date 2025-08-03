@@ -3,115 +3,108 @@
 import { useState, useEffect } from 'react'
 
 interface TokenPrice {
-  [address: string]: string
+  [address: string]: number
 }
 
 export default function LivePriceTracker() {
   const [prices, setPrices] = useState<TokenPrice>({})
-  const [isLoading, setIsLoading] = useState(true)
-  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
-
-  const majorTokens = {
-    '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2': 'WETH',
-    '0xA0b86a33E6441b06EdA61B4Dd3749aD7A7C5D9c7': 'USDC',
-    '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599': 'WBTC',
-    '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984': 'UNI',
-    '0x6B175474E89094C44Da98b954EedeAC495271d0F': 'DAI',
-    '0x514910771AF9Ca656af840dff83E8264EcF986CA': 'LINK'
-  }
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchPrices = async () => {
     try {
-      const tokenAddresses = Object.keys(majorTokens).join(',')
+      console.log('🔄 Fetching live prices...')
+      
+      const tokenAddresses = [
+        '0xA0b86a33E6441b06EdA61B4Dd3749aD7A7C5D9c7', // USDC
+        '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT
+        '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599'  // WBTC
+      ].join(',')
+
       const response = await fetch(`/api/1inch/prices?tokens=${tokenAddresses}`)
       
       if (response.ok) {
         const data = await response.json()
-        setPrices(data)
-        setLastUpdate(new Date())
         console.log('✅ Live prices updated:', data)
+        setPrices(data)
+        setError(null)
       } else {
-        console.error('❌ Price fetch failed')
+        console.warn('⚠️ API failed, using fallback prices')
+        setPrices({
+          '0xA0b86a33E6441b06EdA61B4Dd3749aD7A7C5D9c7': 1.00,
+          '0xdAC17F958D2ee523a2206206994597C13D831ec7': 1.00,
+          '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599': 43250.00
+        })
+        setError('Using demo prices')
       }
     } catch (error) {
-      console.error('❌ Price fetch error:', error)
+      console.error('❌ Price fetch failed:', error)
+      setPrices({
+        '0xA0b86a33E6441b06EdA61B4Dd3749aD7A7C5D9c7': 1.00,
+        '0xdAC17F958D2ee523a2206206994597C13D831ec7': 1.00,
+        '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599': 43250.00
+      })
+      setError('Network error - using demo prices')
+    } finally {
+      setLoading(false)
     }
-    setIsLoading(false)
   }
 
   useEffect(() => {
     fetchPrices()
-    const interval = setInterval(fetchPrices, 30000) // Update every 30 seconds
+    const interval = setInterval(fetchPrices, 30000)
     return () => clearInterval(interval)
   }, [])
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold">📊 Live Token Prices</h3>
-          <div className="animate-spin">⏳</div>
-        </div>
-        <div className="text-center py-8 text-gray-500">
-          Loading real-time prices from 1inch...
-        </div>
+      <div className="bg-white p-4 rounded-lg shadow-sm border">
+        <h3 className="text-lg font-semibold mb-3">📈 Live Token Prices</h3>
+        <div className="animate-pulse">Loading prices...</div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm border">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold">📊 Live Token Prices</h3>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-xs text-green-600 font-medium">LIVE 1inch API</span>
+    <div className="bg-white p-4 rounded-lg shadow-sm border">
+      <h3 className="text-lg font-semibold mb-3">📈 Live Token Prices</h3>
+      
+      {error && (
+        <div className="mb-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+          {error}
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {Object.entries(majorTokens).map(([address, symbol]) => {
-          const price = prices[address]
-          const formattedPrice = price ? parseFloat(price).toLocaleString('en-US', {
-            style: 'currency',
-            currency: 'USD',
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 6
-          }) : 'Loading...'
-
+      )}
+      
+      <div className="space-y-2">
+        {Object.entries(prices).map(([tokenAddress, price]) => {
+          const getTokenInfo = (addr: string) => {
+            if (addr.includes('A0b86a33')) return { symbol: 'USDC', name: 'USD Coin' }
+            if (addr.includes('dAC17F95')) return { symbol: 'USDT', name: 'Tether USD' }
+            if (addr.includes('2260FAC5')) return { symbol: 'WBTC', name: 'Wrapped Bitcoin' }
+            return { symbol: 'TOKEN', name: 'Unknown Token' }
+          }
+          
+          const tokenInfo = getTokenInfo(tokenAddress)
+          
           return (
-            <div key={address} className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-semibold text-gray-900">{symbol}</div>
-                  <div className="text-lg font-bold text-blue-600">{formattedPrice}</div>
-                </div>
-                <div className="text-2xl">
-                  {symbol === 'WETH' && '⟠'}
-                  {symbol === 'USDC' && '💵'}
-                  {symbol === 'WBTC' && '₿'}
-                  {symbol === 'UNI' && '🦄'}
-                  {symbol === 'DAI' && '🔶'}
-                  {symbol === 'LINK' && '🔗'}
+            <div key={tokenAddress} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+              <div className="text-sm">
+                <div className="font-medium">{tokenInfo.symbol}</div>
+                <div className="text-xs text-gray-500">{tokenAddress.substring(0, 8)}...</div>
+              </div>
+              <div className="text-right">
+                <div className="font-medium text-green-600">
+                  ${typeof price === 'number' ? price.toLocaleString() : price}
                 </div>
               </div>
             </div>
           )
         })}
       </div>
-
-      {lastUpdate && (
-        <div className="mt-4 text-xs text-gray-500 text-center">
-          Last updated: {lastUpdate.toLocaleTimeString()} via 1inch Price API
-        </div>
-      )}
-
-      <button
-        onClick={fetchPrices}
-        className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg text-sm font-medium transition-colors"
-      >
-        🔄 Refresh Prices
-      </button>
+      
+      <div className="mt-3 text-xs text-gray-500 text-center">
+        Updates every 30 seconds • Powered by 1inch
+      </div>
     </div>
   )
 }

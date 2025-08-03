@@ -4,12 +4,11 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { injected } from 'wagmi/connectors'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import PortfolioOverview from '@/components/portfolio/PortfolioOverview'
-import SwapInterface from '@/components/swap/SwapInterface'
+import RealSwapInterface from '@/components/swap/RealSwapInterface' // ✅ Changed this line
 import ChainSwitcher from '@/components/ui/ChainSwitcher'
 import PriceChart from '@/components/portfolio/PriceChart'
 import DataSourceStatus from '@/components/ui/DataSourceStatus'
 import OneInchStatus from '@/components/ui/OneInchStatus'
-import TestAPI from '@/components/TestAPI' // 👈 ADD THIS IMPORT
 
 export default function Home() {
   const { address, isConnected } = useAccount()
@@ -19,9 +18,6 @@ export default function Home() {
 
   return (
     <div className="space-y-8">
-      {/* 🧪 ADD THIS TEST COMPONENT AT THE TOP */}
-      <TestAPI />
-      
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Portfolio Dashboard</h2>
@@ -72,7 +68,7 @@ export default function Home() {
         <div className="bg-white p-6 rounded-lg shadow-sm border">
           <h3 className="text-lg font-semibold mb-2">Builder</h3>
           <p className="text-3xl font-bold text-blue-600">anumukul456</p>
-          <p className="text-sm text-gray-600 mt-1">August 3, 2025</p>
+          <p className="text-sm text-gray-600 mt-1">August 2, 2025</p>
         </div>
       </div>
       
@@ -84,17 +80,17 @@ export default function Home() {
           </div>
           <div className="space-y-6">
             <OneInchStatus />
-            <SwapInterface />
+            <RealSwapInterface /> {/* ✅ Changed this line */}
           </div>
         </div>
       ) : (
         <div className="text-center py-16">
           <div className="text-6xl mb-6">🚀</div>
           <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            DeFi Portfolio Manager
+            DeFi Portfolio Manager with Real 1inch Integration
           </h3>
           <p className="text-gray-600 mb-8 max-w-md mx-auto">
-            Track your DeFi portfolio with real-time data from 1inch APIs.
+            Track your DeFi portfolio and swap tokens using real 1inch API integration.
           </p>
           <button
             onClick={() => connect({ connector: injected() })}
@@ -103,7 +99,7 @@ export default function Home() {
             Connect Wallet & Start Trading
           </button>
           <div className="mt-6 text-sm text-gray-500">
-            Built by anumukul456 • Real 1inch API Integration
+            Built by anumukul456 • Real 1inch API integration
           </div>
         </div>
       )}

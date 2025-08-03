@@ -11,6 +11,8 @@ import PriceChart from '@/components/portfolio/PriceChart'
 import DataSourceStatus from '@/components/ui/DataSourceStatus'
 import OneInchStatus from '@/components/ui/OneInchStatus'
 
+import DexAnalytics from '@/components/analytics/DexAnalytics'
+
 export default function Home() {
   const { address, isConnected } = useAccount()
   const { connect } = useConnect()
@@ -77,7 +79,8 @@ export default function Home() {
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
           <div className="xl:col-span-3 space-y-8">
             <PortfolioOverview />
-            <LivePriceTracker /> {/* ✅ Add this */}
+            <LivePriceTracker /> 
+            <DexAnalytics /> 
             <PriceChart />
           </div>
           <div className="space-y-6">

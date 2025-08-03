@@ -5,7 +5,7 @@ A professional-grade DeFi portfolio management application built with real 1inch
 ![DeFi Portfolio Optimizer](https://img.shields.io/badge/Status-Live-brightgreen) ![Next.js](https://img.shields.io/badge/Next.js-13-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![1inch](https://img.shields.io/badge/1inch-API-orange)
 
 ## 🌐 **Live Demo**
-**Production URL**: [https://defi-portfolio-manager-ni11rnv9v.vercel.app/](https://defi-portfolio-manager-ni11rnv9v.verc.app)
+**Production URL**: [https://defi-portfolio-manager-ni11rnv9v.vercel.app/](https://defi-portfolio-manager-ni11rnv9v.verc.app/)
 
 ## ✨ **Key Features**
 
